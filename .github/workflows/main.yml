@@ -3,7 +3,7 @@ name: Code Scan and Build Docker Images
 on:
   push:
     branches:
-      - release  # Trigger only on the release branch
+      - release-mvp-0.6  # Trigger only on the release branch
 
 jobs:
   code-scan-and-build:
