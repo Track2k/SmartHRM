@@ -1,0 +1,61 @@
+name: Code Scan and Build Docker Images
+
+on:
+  push:
+    branches:
+      - release  # Trigger only on the release branch
+
+jobs:
+  code-scan-and-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - intermediate-master-service
+          - another-service  # Add all microservice folders here
+
+    steps:
+      # Step 1: Checkout Code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Detect Changes in Service Folder
+      - name: Check if folder changed for ${{ matrix.service }}
+        id: folder-check
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service }}/"; then
+            echo "changes=true" >> $GITHUB_ENV
+          else
+            echo "changes=false" >> $GITHUB_ENV
+
+      # Step 3: Skip Build if No Changes
+      - name: Skip Build if No Changes
+        if: env.changes == 'false'
+        run: echo "No changes detected in ${{ matrix.service }}, skipping build."
+
+      # Step 4: Run Code Scan
+      - name: Run CodeQL Analysis
+        if: env.changes == 'true'
+        uses: github/codeql-action/init@v2
+        with:
+          languages: 'python'  # Adjust based on the language(s) in your services
+      - name: Perform CodeQL Analysis
+        if: env.changes == 'true'
+        uses: github/codeql-action/analyze@v2
+
+      # Step 5: Build Docker Image
+      - name: Build Docker Image for ${{ matrix.service }}
+        if: env.changes == 'true'
+        run: |
+          cd ${{ matrix.service }}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:latest .
+
+      # Step 6: Push Docker Image to Registry (Optional)
+      - name: Push Docker Image to Registry
+        if: env.changes == 'true'
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:latest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
