@@ -64,7 +64,7 @@ jobs:
           SERVICE: ${{ matrix.service }}
         run: |
           ssh -o StrictHostKeyChecking=no \
-          ubuntu@${{ secrets.EC2_HOST }} \
+          ec2-user@${{ secrets.EC2_HOST }} \
           "bash -c '
           # Export the SERVICE variable inside the remote shell
           export SERVICE=\"$SERVICE\"
