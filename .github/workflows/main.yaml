@@ -1,8 +1,8 @@
-name: HRM CI/CD pipeline
+name: SmartHRM CI/CD pipeline
 on:
   push:
     branches:
-    - release-mvp-0.6-123 # Trigger only on the release branch
+      - release-mvp-0.6 # Trigger only on the release branch
   workflow_dispatch:
     # Enable manual triggering
 
@@ -11,71 +11,86 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     strategy:
+      max-parallel: 1
       matrix:
         service:
-        - front-end # Add all microservice folder
+          - jd-upload # Add all microservice folder
     steps:
-    # Step 1: Set up QEMU to enable cross-platform builds
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      # Step 1: Set up QEMU to enable cross-platform builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-    # Step 2: Set up Docker Buildx (for multi-architecture builds)
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      # Step 2: Set up Docker Buildx (for multi-architecture builds)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    # Step 3: Checkout Code
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Step 3: Checkout Code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Step 4: Login to Docker Hub
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Step 4: Login to Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Step 5: Build Docker Image for ${{ matrix.service }}
-    - name: Build Docker Image for ${{ matrix.service }}
-      run: |
-        cd ${{ matrix.service }}
-        docker buildx build --platform linux/arm64 -t tracktwok/smart_hr_system:${{ matrix.service }} --push .
-  # deploy-on-ec2:
-  #   needs: image-build
-  #   runs-on: ubuntu-latest
-  #   environment: dev
-  #   strategy:
-  #     matrix:
-  #       service:
-  #       - client-master # Match the services from the build job
-  #   steps:
-  #   # Step 1: Set up SSH to connect to the EC2 instance
-  #   - name: Setup SSH
-  #     uses: webfactory/ssh-agent@v0.5.3
-  #     with:
-  #       ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+      # Step 5: Build Docker Image for ${{ matrix.service }}
+      - name: Build Docker Image for ${{ matrix.service }}
+        run: |
+          cd ${{ matrix.service }}
+          docker buildx build --platform linux/arm64 -t tracktwok/smart_hr_system:${{ matrix.service }} --push .
 
-  #   # Step 2: Deploy to EC2
-  #   - name: Deploy Docker Containers on EC2
-  #     env:
-  #       SERVICE: ${{ matrix.service }}
-  #     run: |
-  #       ssh -o StrictHostKeyChecking=no \
-  #       ubuntu@${{ secrets.EC2_HOST }} \
-  #       "bash -c '
-  #       export SERVICE=\"$SERVICE\"
-  #       echo \"Remote SERVICE value: \$SERVICE\" 
+  deploy:
+    needs: image-build
+    runs-on: ubuntu-latest
+    environment: prod
+    strategy:
+      max-parallel: 1
+      matrix:
+        service:
+          - jd-upload
+    steps:
+      # Step 1: Set up SSH to connect to the EC2 instance
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-  #       if [ -z \"\$SERVICE\" ]; then 
-  #         echo \"Error: SERVICE variable is not set\"; 
-  #         exit 1; 
-  #       fi
+      # Step 2: Deploy to Kubernetes on EC2
+      - name: Kubernetes Rollout Restart
+        env:
+          # Explicitly pass the service name as an environment variable
+          SERVICE: ${{ matrix.service }}
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+          ubuntu@${{ secrets.EC2_HOST }} \
+          "bash -c '
+          # Export the SERVICE variable inside the remote shell
+          export SERVICE=\"$SERVICE\"
+          
+          # Validate SERVICE variable
+          if [ -z \"\$SERVICE\" ]; then
+            echo \"Error: SERVICE variable is not set\"
+            exit 1
+          fi
 
-  #       # Pull the latest Docker image
-  #       docker pull tracktwok/smart_hr_system:\"\$SERVICE\"
+          echo \"Deploying service: \$SERVICE\"
 
-  #       # Stop and remove any existing container
-  #       docker rm -f \"\$SERVICE\" || true
+          # Ensure minikube is running
+          if ! minikube status | grep -q \"host: Running\"; then
+            echo \"Starting Minikube...\"
+            minikube start
+          fi
 
-  #       # Run the container
-  #       docker run -d --name \"\$SERVICE\" -p 8009:8009 tracktwok/smart_hr_system:\"\$SERVICE\"
-  #       '"
+          cd /home/ec2-user
+          # apply yaml
+          kubectl apply -f deployment.yaml
+
+          # Perform rollout restart for the specific service in prod namespace
+          echo \"Performing rollout restart for \$SERVICE in prod namespace\"
+          kubectl rollout restart deployment/\"\$SERVICE\" 
+
+          # Wait for rollout to complete and verify
+          kubectl rollout status deployment/\"\$SERVICE\" 
+          '"
