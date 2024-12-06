@@ -44,7 +44,7 @@ jobs:
   deploy:
     needs: image-build
     runs-on: ubuntu-latest
-    environment: prod
+    environment: dev
     strategy:
       max-parallel: 1
       matrix:
