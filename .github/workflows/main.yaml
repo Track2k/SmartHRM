@@ -34,6 +34,7 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV
+          fi
 
       # Skip Build if No Changes
       - name: Skip Build if No Changes
