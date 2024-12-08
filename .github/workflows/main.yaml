@@ -20,7 +20,6 @@ jobs:
           - candidate-master
           - requirement-master
           - intermediate-master
-          - front-end
 
     steps:
       # Checkout Code
@@ -58,7 +57,6 @@ jobs:
           - candidate-master
           - requirement-master
           - intermediate-master
-          - front-end
     steps:
       # Set up QEMU to enable cross-platform builds
       - name: Set up QEMU
@@ -94,7 +92,12 @@ jobs:
       max-parallel: 6
       matrix:
         service:
-          - jd-upload
+          - jd-upload 
+          - client-master
+          - candidate-master
+          - requirement-master
+          - intermediate-master
+
     steps:
       # Set up SSH to connect to the EC2 instance
       - name: Setup SSH
