@@ -24,6 +24,8 @@ jobs:
             # Checkout Code
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       # Detect Changes in Service Folder
       - name: Check if folder changed for ${{ matrix.service }}
