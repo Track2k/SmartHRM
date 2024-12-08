@@ -34,6 +34,7 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV
+          fi
 
      # Stop further stages if no changes detected
       - name: Stop job if no changes detected
