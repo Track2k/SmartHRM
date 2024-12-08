@@ -7,6 +7,43 @@ on:
     # Enable manual triggering
 
 jobs:
+  check-for-latest-change:
+    runs-on: ubuntu-latest
+    environment: dev
+    strategy:
+      max-parallel: 6
+      matrix:
+        service:
+          # microservice folder
+          - jd-upload 
+          - client-master
+          - candidate-master
+          - requirement-master
+          - intermediate-master
+          - front-end
+
+    steps:
+      # Checkout Code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      # Detect Changes in Service Folder
+      - name: Check if folder changed for ${{ matrix.service }}
+        id: folder-check
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service }}/"; then
+            echo "changes=true" >> $GITHUB_ENV
+          else
+            echo "changes=false" >> $GITHUB_ENV
+          fi
+     # Stop further stages if no changes detected
+      - name: Stop job if no changes detected
+        if: env.changes == 'false'
+        run: |
+          echo "No changes detected in ${matrix.service}, skipping the rest of the pipeline."
+          exit 0
+
+          
   image-build:
     runs-on: ubuntu-latest
     environment: dev
@@ -22,25 +59,6 @@ jobs:
           - intermediate-master
           - front-end
     steps:
-      # Checkout Code
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      # Detect Changes in Service Folder
-      - name: Check if folder changed for ${{ matrix.service }}
-        id: folder-check
-        run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service }}/"; then
-            echo "changes=true" >> $GITHUB_ENV
-          else
-            echo "changes=false" >> $GITHUB_ENV
-          fi
-
-      # Skip Build if No Changes
-      - name: Skip Build if No Changes
-        if: env.changes == 'false'
-        run: echo "No changes detected in ${{ matrix.service }}, skipping build."
-
       # Set up QEMU to enable cross-platform builds
       - name: Set up QEMU
         if: env.changes == 'true'
@@ -65,13 +83,14 @@ jobs:
         run: |
           cd ${{ matrix.service }}
           docker buildx build --platform linux/arm64 -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
-            
+  
+          
   deploy:
     needs: image-build
     runs-on: ubuntu-latest
     environment: dev
     strategy:
-      max-parallel: 1
+      max-parallel: 6
       matrix:
         service:
           - jd-upload
