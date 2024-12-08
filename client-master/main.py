@@ -184,6 +184,7 @@ def update_client(client_id: str, client: ClientWithContacts):
         conn.close()
     return {"message": "Client updated successfully."}
 
+
 # 5. Delete a client by ID (DELETE)
 @app.delete("/clients/{client_id}")
 def delete_client(client_id: str):
