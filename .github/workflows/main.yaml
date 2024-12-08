@@ -45,6 +45,7 @@ jobs:
 
           
   image-build:
+    needs: check-for-latest-change
     runs-on: ubuntu-latest
     environment: dev
     strategy:
