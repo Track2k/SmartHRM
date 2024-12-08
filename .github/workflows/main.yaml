@@ -34,12 +34,12 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV
-          fi
+
      # Stop further stages if no changes detected
       - name: Stop job if no changes detected
         if: env.changes == 'false'
         run: |
-          echo "No changes detected in ${matrix.service}, skipping the rest of the pipeline."
+          echo "No changes detected in ${{matrix.service}}, skipping the rest of the pipeline."
           exit 0
 
           
