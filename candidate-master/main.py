@@ -271,6 +271,8 @@ def delete_candidate(cd_id: str):
     
     return {"message": "Candidate deleted successfully."}
 
+
+# Uvicorn server
 if __name__ == "__main__":
     port = int(os.getenv("main", 8007)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
