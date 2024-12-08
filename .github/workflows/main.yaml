@@ -35,7 +35,11 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV
-          fi
+      
+      # Skip job if no changes
+      - name: Skip if no changes
+        if: env.changes == 'false'
+        run: echo "No changes in ${{ matrix.service }}. Skipping build and deploy."
 
       # Set up QEMU to enable cross-platform builds
       - name: Set up QEMU
