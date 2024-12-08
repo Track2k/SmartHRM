@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     strategy:
-      max-parallel: 1
+      max-parallel: 6
       matrix:
         service:
           # microservice folder
@@ -34,8 +34,7 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV
-          fi 
-      
+
       # Skip Build if No Changes
       - name: Skip Build if No Changes
         if: env.changes == 'false'
@@ -61,10 +60,11 @@ jobs:
 
       # Build Docker Image for ${{ matrix.service }}
       - name: Build Docker Image for ${{ matrix.service }}
+        if: env.changes == 'true'
         run: |
           cd ${{ matrix.service }}
           docker buildx build --platform linux/arm64 -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
-
+            
   deploy:
     needs: image-build
     runs-on: ubuntu-latest
