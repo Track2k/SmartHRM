@@ -20,7 +20,6 @@ jobs:
           - candidate-master
           - requirement-master
           - intermediate-master
-          - front-end
     steps:
             # Checkout Code
       - name: Checkout repository
@@ -34,6 +33,7 @@ jobs:
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV
+          fi
 
       # Set up QEMU to enable cross-platform builds
       - name: Set up QEMU
@@ -73,7 +73,6 @@ jobs:
           - candidate-master
           - requirement-master
           - intermediate-master
-          - front-end
     steps:
       # Set up SSH to connect to the EC2 instance
       - name: Setup SSH
