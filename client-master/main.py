@@ -206,6 +206,8 @@ def delete_client(client_id: str):
         conn.close()
     return {"message": "Client deleted successfully."}
 
+
+# uvicorn port setup
 if __name__ == "__main__":
     port = int(os.getenv("main", 8010)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
