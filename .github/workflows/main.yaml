@@ -2,7 +2,7 @@ name: SmartHRM CI/CD pipeline
 on:
   push:
     branches:
-      - release-mvp-0.6 # Trigger only on the specified branch
+    - release-mvp-0.6 # Trigger only on the specified branch
   workflow_dispatch:
     # Enable manual triggering
 
@@ -14,58 +14,58 @@ jobs:
       max-parallel: 6
       matrix:
         service:
-          # microservice folder
-          - jd-upload 
-          - client-master
-          - candidate-master
-          - requirement-master
-          - intermediate-master
+        # microservice folder
+        - jd-upload
+        - client-master
+        - candidate-master
+        - requirement-master
+        - intermediate-master
     steps:
-            # Checkout Code
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+    # Checkout Code
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
-      # Detect Changes in Service Folder
-      - name: Check if folder changed for ${{ matrix.service }}
-        id: folder-check
-        run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service }}/"; then
-            echo "changes=true" >> $GITHUB_ENV
-          else
-            echo "changes=false" >> $GITHUB_ENV
-          fi
-      # Skip job if no changes
-      - name: Skip if no changes
-        if: env.changes == 'false'
-        run: echo "No changes in ${{ matrix.service }}. Skipping build and deploy."
+    # Detect Changes in Service Folder
+    - name: Check if folder changed for ${{ matrix.service }}
+      id: folder-check
+      run: |
+        if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^${{ matrix.service }}/"; then
+          echo "changes=true" >> $GITHUB_ENV
+        else
+          echo "changes=false" >> $GITHUB_ENV
+        fi
+    # Skip job if no changes
+    - name: Skip if no changes
+      if: env.changes == 'false'
+      run: echo "No changes in ${{ matrix.service }}. Skipping build and deploy."
 
-      # Set up QEMU to enable cross-platform builds
-      - name: Set up QEMU
-        if: env.changes == 'true'
-        uses: docker/setup-qemu-action@v3
+    # Set up QEMU to enable cross-platform builds
+    - name: Set up QEMU
+      if: env.changes == 'true'
+      uses: docker/setup-qemu-action@v3
 
-      # Set up Docker Buildx (for multi-architecture)
-      - name: Set up Docker Buildx
-        if: env.changes == 'true'
-        uses: docker/setup-buildx-action@v2
+    # Set up Docker Buildx (for multi-architecture)
+    - name: Set up Docker Buildx
+      if: env.changes == 'true'
+      uses: docker/setup-buildx-action@v3
 
-      # Login to Docker Hub
-      - name: Login to Docker Hub
-        if: env.changes == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+    # Login to Docker Hub
+    - name: Login to Docker Hub
+      if: env.changes == 'true'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Build Docker Image for ${{ matrix.service }}
-      - name: Build Docker Image for ${{ matrix.service }}
-        if: env.changes == 'true'
-        run: |
-          cd ${{ matrix.service }}
-          docker buildx build --platform linux/arm64 -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
-            
+    # Build Docker Image for ${{ matrix.service }}
+    - name: Build Docker Image for ${{ matrix.service }}
+      if: env.changes == 'true'
+      run: |+
+        cd ${{ matrix.service }}
+        docker buildx build --platform linux/arm64 -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
+          
   deploy:
     needs: image-build
     runs-on: ubuntu-latest
@@ -74,53 +74,53 @@ jobs:
       max-parallel: 6
       matrix:
         service:
-          - jd-upload
-          - client-master
-          - candidate-master
-          - requirement-master
-          - intermediate-master
+        - jd-upload
+        - client-master
+        - candidate-master
+        - requirement-master
+        - intermediate-master
     steps:
-      # Set up SSH to connect to the EC2 instance
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+    # Set up SSH to connect to the EC2 instance
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # Deploy to Kubernetes on EC2
-      - name: Kubernetes Rollout Restart
-        if: env.changes == 'true'
-        env:
-          # Explicitly pass the service name as an environment variable
-          SERVICE: ${{ matrix.service }}
-        run: |
-          ssh -o StrictHostKeyChecking=no \
-          ec2-user@${{ secrets.EC2_HOST }} \
-          "bash -c '
-          # Export the SERVICE variable inside the remote shell
-          export SERVICE=\"$SERVICE\"
-          
-          # Validate SERVICE variable
-          if [ -z \"\$SERVICE\" ]; then
-            echo \"Error: SERVICE variable is not set\"
-            exit 1
-          fi
+    # Deploy to Kubernetes on EC2
+    - name: Kubernetes Rollout Restart
+      if: env.changes == 'true'
+      env:
+        # Explicitly pass the service name as an environment variable
+        SERVICE: ${{ matrix.service }}
+      run: |
+        ssh -o StrictHostKeyChecking=no \
+        ec2-user@${{ secrets.EC2_HOST }} \
+        "bash -c '
+        # Export the SERVICE variable inside the remote shell
+        export SERVICE=\"$SERVICE\"
 
-          echo \"Deploying service: \$SERVICE\"
+        # Validate SERVICE variable
+        if [ -z \"\$SERVICE\" ]; then
+          echo \"Error: SERVICE variable is not set\"
+          exit 1
+        fi
 
-          # Ensure minikube is running
-          if ! minikube status | grep -q \"host: Running\"; then
-            echo \"Starting Minikube...\"
-            minikube start
-          fi
+        echo \"Deploying service: \$SERVICE\"
 
-          cd /home/ec2-user
-          # apply yaml
-          kubectl apply -f deployment.yaml
+        # Ensure minikube is running
+        if ! minikube status | grep -q \"host: Running\"; then
+          echo \"Starting Minikube...\"
+          minikube start
+        fi
 
-          # Perform rollout restart for the specific service in prod namespace
-          echo \"Performing rollout restart for \$SERVICE in prod namespace\"
-          kubectl rollout restart deployment/\"\$SERVICE\" 
+        cd /home/ec2-user
+        # apply yaml
+        kubectl apply -f deployment.yaml
 
-          # Wait for rollout to complete and verify
-          kubectl rollout status deployment/\"\$SERVICE\" 
-          '"
+        # Perform rollout restart for the specific service in prod namespace
+        echo \"Performing rollout restart for \$SERVICE in prod namespace\"
+        kubectl rollout restart deployment/\"\$SERVICE\" 
+
+        # Wait for rollout to complete and verify
+        kubectl rollout status deployment/\"\$SERVICE\" 
+        '"
