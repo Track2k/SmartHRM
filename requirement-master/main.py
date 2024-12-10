@@ -229,6 +229,10 @@ def delete_requirement(rq_id: str):
 
     return {"message": "Requirement deleted successfully."}
 
+
+
+
+# this is a uvicorn server
 if __name__ == "__main__":
     port = int(os.getenv("main", 8008)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
