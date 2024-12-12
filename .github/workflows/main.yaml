@@ -20,6 +20,7 @@ jobs:
         - candidate-master
         - requirement-master
         - intermediate-master
+        - front-end
     steps:
     # Checkout Code
     - name: Checkout repository
