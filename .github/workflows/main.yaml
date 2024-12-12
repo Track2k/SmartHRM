@@ -42,16 +42,6 @@ jobs:
       if: env.changes == 'false'
       run: echo "No changes in ${{ matrix.service }}. Skipping build and deploy."
 
-    # Set up QEMU to enable cross-platform builds
-    - name: Set up QEMU
-      if: env.changes == 'true'
-      uses: docker/setup-qemu-action@v3
-
-    # Set up Docker Buildx (for multi-architecture)
-    - name: Set up Docker Buildx
-      if: env.changes == 'true'
-      uses: docker/setup-buildx-action@v3
-
     # Login to Docker Hub
     - name: Login to Docker Hub
       if: env.changes == 'true'
@@ -65,7 +55,10 @@ jobs:
       if: env.changes == 'true'
       run: |+
         cd ${{ matrix.service }}
-        docker buildx build --platform linux/arm64 -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
+        if [ "${{ matrix.service }}" == "front-end" ]; then
+        cp /home/ubuntu/environment.ts ./src/environments/
+        fi
+        docker build -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
           
   deploy:
     needs: image-build
