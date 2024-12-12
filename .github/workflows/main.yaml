@@ -8,7 +8,7 @@ on:
 
 jobs:
   image-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: dev
     strategy:
       max-parallel: 6
