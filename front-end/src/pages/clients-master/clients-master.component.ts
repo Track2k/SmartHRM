@@ -5,7 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource } from '@angular/material/table';
 import { ClientsService } from './client.service';
 import { ClientWithContacts } from './client.model';
-import { ClientsFormComponent } from '../client-form/client-form.component';
+import { ClientFormComponent } from '../client-form/client-form.component';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -28,8 +28,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     MatIconModule,
     MatButtonModule,
     MatInputModule,
-    ClientsFormComponent,
-    ConfirmDialogComponent
+    ClientFormComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './clients-master.component.html',
   styleUrls: ['./clients-master.component.css'],
@@ -64,7 +64,7 @@ export class ClientsMasterComponent implements OnInit {
   }
 
   openAddClientForm(): void {
-    const dialogRef = this.dialog.open(ClientsFormComponent, {
+    const dialogRef = this.dialog.open(ClientFormComponent, {
       height: '600px',
       width: '700px',
       data: {
@@ -104,7 +104,7 @@ export class ClientsMasterComponent implements OnInit {
   }
 
   openEditClientForm(client: ClientWithContacts): void {
-    const dialogRef = this.dialog.open(ClientsFormComponent, {
+    const dialogRef = this.dialog.open(ClientFormComponent, {
       height: '600px',
       width: '700px',
       data: {
@@ -130,7 +130,7 @@ export class ClientsMasterComponent implements OnInit {
   }
 
   openViewClientForm(client: ClientWithContacts): void {
-    const dialogRef = this.dialog.open(ClientsFormComponent, {
+    const dialogRef = this.dialog.open(ClientFormComponent, {
       height: '600px',
       width: '700px',
       data: {

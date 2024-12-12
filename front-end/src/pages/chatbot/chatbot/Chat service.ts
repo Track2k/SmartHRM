@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class ChatbotService {
-  private apiUrl = 'http://localhost:8008/api/ai-assistant-4o/query'; // Ensure this is correct
+  private apiUrl = '/api/ai-assistant/query'; // Ensure this is correct
 
   constructor(private http: HttpClient) {}
 
