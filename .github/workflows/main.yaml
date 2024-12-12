@@ -56,6 +56,7 @@ jobs:
       run: |+
         cd ${{ matrix.service }}
         if [ "${{ matrix.service }}" == "front-end" ]; then
+        mkdir -p ./src/environments
         cp /home/ubuntu/environment.ts ./src/environments/
         fi
         docker build -t opentechxdoclabs/smart_hr_system:${{ matrix.service }} --push .
