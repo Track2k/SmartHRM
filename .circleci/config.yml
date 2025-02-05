@@ -30,7 +30,7 @@ workflows:
       - build-and-push:
           filters:
             branches:
-              only: release-0.6
+              only: release-mvp-0.6
           matrix:
             parameters:
               service_path:
