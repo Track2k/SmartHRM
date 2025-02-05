@@ -1,0 +1,39 @@
+version: 2.1
+
+orbs:
+  docker: circleci/docker@2.8.2
+
+jobs:
+  build-and-push:
+    parameters:
+      service_path:
+        type: string
+    docker:
+      - image: cimg/base:current  
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Docker Login
+          command: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - docker/build:
+          path: << parameters.service_path >>
+          image: << parameters.service_path >>
+          tag: latest 
+      - docker/push:
+          image: << parameters.service_path >>
+          tag: latest 
+
+workflows:
+  microservices:
+    jobs:
+      - build-and-push:
+          filters:
+            branches:
+              only: release-0.6
+          matrix:
+            parameters:
+              service_path:
+                - jd-upload
+                - resume-upload
+          context: docker-credentials
